@@ -107,7 +107,8 @@ var handleLoadedTexture = function(texture){
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, texture.image);
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST); // These two lines tell gl how to scale when the drawing is larger/smaller than the src image.
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+    gl.generateMipmap(gl.TEXTURE_2D);
 
     gl.bindTexture(gl.TEXTURE_2D, null);
 };
@@ -248,9 +249,14 @@ var initBuffers = function(){
     cubeVertexIndexBuffer.numItems = 36;
 };
 
-var rotX = 0;
-var rotY = 0;
-var rotZ = 0;
+var xRot = 0;
+var xSpeed = 0;
+
+var yRot = 0;
+var ySpeed = 0;
+
+var zCoord = -5;
+
 var drawScene = function(){
 	// pass gl the size of the canvas we're going to draw onto.
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
@@ -264,12 +270,11 @@ var drawScene = function(){
 	// This function call sets the model view matrix to the identity matrix. (It basically sets up a matrix at the origin from where we can start applying transformations)
 	mat4.identity(mvMatrix);
 
-    mat4.translate(mvMatrix, mvMatrix, [0, 0, -5]);
+    mat4.translate(mvMatrix, mvMatrix, [0, 0, zCoord]);
 
     mvPushMatrix();
-    mat4.rotate(mvMatrix, mvMatrix, rotX, [1, 0, 0]);
-    mat4.rotate(mvMatrix, mvMatrix, rotY, [0, 1, 0]);
-    mat4.rotate(mvMatrix, mvMatrix, rotZ, [0, 0, 1]);
+    mat4.rotate(mvMatrix, mvMatrix, xRot, [1, 0, 0]);
+    mat4.rotate(mvMatrix, mvMatrix, yRot, [0, 1, 0]);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPosBuffer);
     gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, cubeVertexPosBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -288,6 +293,30 @@ var drawScene = function(){
     mvPopMatrix();
 };
 
+var handleKeys = function(){
+    if(pressedKeys[187]){ // +_key
+        zCoord += 0.05;
+    }
+    if(pressedKeys[189]){ //-_key
+        zCoord -= 0.05;
+    }
+
+    if(pressedKeys[38]){ //arrow up
+        xSpeed -= 1/180*Math.PI;
+    }
+    if(pressedKeys[40]){ //arrow down
+        xSpeed += 1/180*Math.PI;
+    }
+
+    if(pressedKeys[37]){ // arrow left
+        ySpeed -= 1/180*Math.PI;
+    }
+
+    if(pressedKeys[39]){ // arrow right
+        ySpeed += 1/180*Math.PI;
+    }
+};
+
 var lastTime = 0;
 var animate = function(){
 	var now = Date.now();
@@ -295,9 +324,8 @@ var animate = function(){
 	if(lastTime != 0){
 		var elapsed = (now - lastTime) / 1000; // time elapsed in seconds
 
-		rotX += 0.5 * Math.PI * elapsed; // 90 deg/s
-        rotY += 0.5 * Math.PI * elapsed; // 90 deg/s
-        rotZ += 0.5 * Math.PI * elapsed; // 90 deg/s
+		xRot += xSpeed * Math.PI * elapsed;
+        yRot += ySpeed * Math.PI * elapsed;
 	}
 
 	lastTime = now;
@@ -305,6 +333,7 @@ var animate = function(){
 
 var tick = function(){
 	window.requestAnimFrame(tick); // requestAnimFrame is a browser-independent function provided by google's webgl-utils
+    handleKeys();
 	drawScene();
 	animate();
 };

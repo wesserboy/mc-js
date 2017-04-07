@@ -3,6 +3,9 @@ var onLoad = function(){
 
 	window.addEventListener("resize", onResize);
 
+	document.addEventListener("keydown", onKeyDown);
+	document.addEventListener("keyup", onKeyUp);
+
 	if(!gl){
 		return;
 	}
@@ -25,5 +28,14 @@ var onResize = function(){
 
 	gl.viewportWidth = canvas.width;
     gl.viewportHeight = canvas.height;
+};
+
+var pressedKeys = {};
+var onKeyDown = function(event){
+	pressedKeys[event.keyCode] = true;
+};
+
+var onKeyUp = function(event){
+	pressedKeys[event.keyCode] = false;
 };
 
