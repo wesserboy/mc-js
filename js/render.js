@@ -80,11 +80,36 @@ var initShaders = function(){
     shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
     gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
 
-    shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
-    gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
+    shaderProgram.vertexTextureCoordAttribute = gl.getAttribLocation(shaderProgram, "aTextureCoord");
+    gl.enableVertexAttribArray(shaderProgram.vertexTextureCoordAttribute);
 
     shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
     shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
+    shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
+};
+
+
+var dirtTexture;
+var initTexture = function(){
+    dirtTexture = gl.createTexture();
+    dirtTexture.image = new Image();
+    dirtTexture.image.onload = function(){ // We add the handler before the src to make sure that the handler is attached before the event fires.
+        handleLoadedTexture(dirtTexture);
+    };
+    dirtTexture.image.crossOrigin = '';
+    dirtTexture.image.src = "http://localhost:8000/assets/dirt.png";
+};
+
+var handleLoadedTexture = function(texture){
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, texture.image);
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST); // These two lines tell gl how to scale when the drawing is larger/smaller than the src image.
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+
+    gl.bindTexture(gl.TEXTURE_2D, null);
 };
 
 
@@ -111,86 +136,22 @@ var setMatrixUniforms = function(){
 };
 
 
-var pyramidVertexPosBuffer;
-var pyramidVertexColorBuffer;
-var pyramidRot = 0; // triangle's rotation in radians
-
 var cubeVertexPosBuffer;
-var cubeVertexColorBuffer;
+var cubeVertexTextureCoordBuffer;
 var cubeVertexIndexBuffer;
-var cubeRot = 0; // square's rotation in radians
 
 var initBuffers = function(){
-	pyramidVertexPosBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, pyramidVertexPosBuffer);
-
-	var vertices = [
-         // front face
-         0.0, 1.0, 0.0,
-         -1.0, -1.0, 1.0,
-         1.0, -1.0, 1.0,
-
-         // right face
-         0.0, 1.0, 0.0,
-         1.0, -1.0, 1.0,
-         1.0, -1.0, -1.0,
-
-         // back face
-         0.0, 1.0, 0.0,
-         1.0, -1.0, -1.0, 
-         -1.0, -1.0, -1.0,
-
-         // left face
-         0.0, 1.0, 0.0,
-         -1.0, -1.0, -1.0,
-         -1.0, -1.0, 1.0
-    ];
-
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-    pyramidVertexPosBuffer.numItems = 12;
-    pyramidVertexPosBuffer.itemSize = 3;
-
-    pyramidVertexColorBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, pyramidVertexColorBuffer);
-
-    var colors = [
-        // front face
-    	1.0, 0.0, 0.0, 1.0,
-    	0.0, 1.0, 0.0, 1.0,
-    	0.0, 0.0, 1.0, 1.0,
-
-        // right face
-        1.0, 0.0, 0.0, 1.0,
-        0.0, 0.0, 1.0, 1.0,
-        0.0, 1.0, 0.0, 1.0,
-
-        // back face
-        1.0, 0.0, 0.0, 1.0,
-        0.0, 1.0, 0.0, 1.0,
-        0.0, 0.0, 1.0, 1.0,
-
-        // left face
-        1.0, 0.0, 0.0, 1.0,
-        0.0, 0.0, 1.0, 1.0,
-        0.0, 1.0, 0.0, 1.0
-    ];
-
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-    pyramidVertexColorBuffer.numItems = 12;
-    pyramidVertexColorBuffer.itemSize = 4;
-
-
     cubeVertexPosBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPosBuffer);
 
     vertices = [
-        // front face
+        // front
     	-1.0, -1.0, 1.0,
         1.0, -1.0, 1.0,
         1.0, 1.0, 1.0,
         -1.0, 1.0, 1.0,
 
-        // back face
+        // back
         1.0, 1.0, -1.0,
         -1.0, 1.0, -1.0,
         -1.0, -1.0, -1.0,
@@ -208,45 +169,67 @@ var initBuffers = function(){
         1.0, -1.0, 1.0,
         -1.0, -1.0, 1.0,
 
-        // left
-        -1.0, 1.0, -1.0,
-        -1.0, 1.0, 1.0, 
-        -1.0, -1.0, 1.0,
-        -1.0, -1.0, -1.0,
-
         // right
         1.0, 1.0, -1.0,
         1.0, -1.0, -1.0,
         1.0, -1.0, 1.0,
-        1.0, 1.0, 1.0
+        1.0, 1.0, 1.0,
+
+        // left
+        -1.0, 1.0, -1.0,
+        -1.0, 1.0, 1.0, 
+        -1.0, -1.0, 1.0,
+        -1.0, -1.0, -1.0
     ];
 
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
     cubeVertexPosBuffer.numItems = 24;
     cubeVertexPosBuffer.itemSize = 3;
 
-    cubeVertexColorBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexColorBuffer);
+    cubeVertexTextureCoordBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
 
-    colors = [
-      [1.0, 0.0, 0.0, 1.0],     // Front face
-      [1.0, 1.0, 0.0, 1.0],     // Back face
-      [0.0, 1.0, 0.0, 1.0],     // Top face
-      [1.0, 0.5, 0.5, 1.0],     // Bottom face
-      [1.0, 0.0, 1.0, 1.0],     // Left face
-      [0.0, 0.0, 1.0, 1.0],     // Right face
+    var textureCoords = [
+      // Front face
+      0.0, 0.0,
+      1.0, 0.0,
+      1.0, 1.0,
+      0.0, 1.0,
+
+      // Back face
+      0.0, 1.0,
+      1.0, 1.0,
+      1.0, 0.0,
+      0.0, 0.0,
+
+      // Top face
+      0.0, 1.0,
+      1.0, 1.0,
+      1.0, 0.0,
+      0.0, 0.0,
+
+      // Bottom face
+      0.0, 0.0,
+      1.0, 0.0,
+      1.0, 1.0,
+      0.0, 1.0,
+
+      // Right face
+      1.0, 1.0,
+      1.0, 0.0,
+      0.0, 0.0,
+      0.0, 1.0,
+
+      // Left face
+      0.0, 1.0,
+      1.0, 1.0,
+      1.0, 0.0,
+      0.0, 0.0,
     ];
-    var quadColors = [];
-    for(c in colors){
-        var col = colors[c];
-    	for(var i = 0; i < 4; i++){
-            quadColors = quadColors.concat(col);
-        }
-    }
 
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(quadColors), gl.STATIC_DRAW);
-    cubeVertexColorBuffer.numItems = 24;
-    cubeVertexColorBuffer.itemSize = 4;
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
+    cubeVertexTextureCoordBuffer.numItems = 24;
+    cubeVertexTextureCoordBuffer.itemSize = 2;
 
     cubeVertexIndexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
@@ -256,8 +239,8 @@ var initBuffers = function(){
       4, 5, 6,      4, 6, 7,    // Back face
       8, 9, 10,     8, 10, 11,  // Top face
       12, 13, 14,   12, 14, 15, // Bottom face
-      16, 17, 18,   16, 18, 19, // Left face
-      20, 21, 22,   20, 22, 23  // Right face
+      16, 17, 18,   16, 18, 19, // Right face
+      20, 21, 22,   20, 22, 23  // Left face
     ];
 
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(cubeVertexIndices), gl.STATIC_DRAW);
@@ -265,7 +248,9 @@ var initBuffers = function(){
     cubeVertexIndexBuffer.numItems = 36;
 };
 
-
+var rotX = 0;
+var rotY = 0;
+var rotZ = 0;
 var drawScene = function(){
 	// pass gl the size of the canvas we're going to draw onto.
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
@@ -278,34 +263,23 @@ var drawScene = function(){
 
 	// This function call sets the model view matrix to the identity matrix. (It basically sets up a matrix at the origin from where we can start applying transformations)
 	mat4.identity(mvMatrix);
-	mat4.translate(mvMatrix, mvMatrix, [-1.5, 0.0, -7.0]); //translates the drawing point 1.5 units to the left and 7 units into the screen (neg Z)
 
-	mvPushMatrix();
-
-	mat4.rotate(mvMatrix, mvMatrix, pyramidRot, [0, 1, 0]);
-
-	gl.bindBuffer(gl.ARRAY_BUFFER, pyramidVertexPosBuffer);
-    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, pyramidVertexPosBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, pyramidVertexColorBuffer);
-    gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, pyramidVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-    setMatrixUniforms();
-    gl.drawArrays(gl.TRIANGLES, 0, pyramidVertexPosBuffer.numItems);
-
-    mvPopMatrix();
-
-
-    mat4.translate(mvMatrix, mvMatrix, [3.0, 0.0, 0.0]); // We moved to (-1.5, 0, -7) earlier, so now we are at (1.5, 0, -7)
+    mat4.translate(mvMatrix, mvMatrix, [0, 0, -5]);
 
     mvPushMatrix();
-    mat4.rotate(mvMatrix, mvMatrix, cubeRot, [1, 1, 1]);
+    mat4.rotate(mvMatrix, mvMatrix, rotX, [1, 0, 0]);
+    mat4.rotate(mvMatrix, mvMatrix, rotY, [0, 1, 0]);
+    mat4.rotate(mvMatrix, mvMatrix, rotZ, [0, 0, 1]);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPosBuffer);
     gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, cubeVertexPosBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexColorBuffer);
-    gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, cubeVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
+    gl.vertexAttribPointer(shaderProgram.vertexTextureCoordAttribute, cubeVertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, dirtTexture);
+    gl.uniform1i(shaderProgram.samplerUniform, 0);
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
     setMatrixUniforms();
@@ -321,8 +295,9 @@ var animate = function(){
 	if(lastTime != 0){
 		var elapsed = (now - lastTime) / 1000; // time elapsed in seconds
 
-		pyramidRot += 0.5 * Math.PI * elapsed; // 90 deg/s
-		cubeRot -= (75/180) * Math.PI * elapsed; // 75 deg/s
+		rotX += 0.5 * Math.PI * elapsed; // 90 deg/s
+        rotY += 0.5 * Math.PI * elapsed; // 90 deg/s
+        rotZ += 0.5 * Math.PI * elapsed; // 90 deg/s
 	}
 
 	lastTime = now;

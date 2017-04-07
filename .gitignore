@@ -1,1 +1,3 @@
 /libs
+/assets
+server-cors.py
