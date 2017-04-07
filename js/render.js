@@ -89,7 +89,21 @@ var initShaders = function(){
 
 
 var mvMatrix = mat4.create(); // model view matrix
+var mvMatrixStack = [];
 var pMatrix = mat4.create(); // projection matrix
+
+var mvPushMatrix = function(){
+	var copy = mat4.clone(mvMatrix);
+	mvMatrixStack.push(copy);
+};
+
+var mvPopMatrix = function(){
+	if(mvMatrixStack.length > 0){
+		mvMatrix = mvMatrixStack.pop();
+	}else{
+		console.error("Failed to pop matrix, the stack was empty!");
+	}
+};
 
 var setMatrixUniforms = function(){
 	gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
@@ -99,8 +113,11 @@ var setMatrixUniforms = function(){
 
 var triangleVertexPosBuffer;
 var triangleVertexColorBuffer;
+var triangleRot = 0; // triangle's rotation in radians
+
 var squareVertexPosBuffer;
 var squareVertexColorBuffer;
+var squareRot = 0; // square's rotation in radians
 
 var initBuffers = function(){
 	triangleVertexPosBuffer = gl.createBuffer();
@@ -174,6 +191,10 @@ var drawScene = function(){
 	mat4.identity(mvMatrix);
 	mat4.translate(mvMatrix, mvMatrix, [-1.5, 0.0, -7.0]); //translates the drawing point 1.5 units to the left and 7 units into the screen (neg Z)
 
+	mvPushMatrix();
+
+	mat4.rotate(mvMatrix, mvMatrix, triangleRot, [0, 1, 0]);
+
 	gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBuffer);
     gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, triangleVertexPosBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
@@ -183,8 +204,13 @@ var drawScene = function(){
     setMatrixUniforms();
     gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBuffer.numItems);
 
+    mvPopMatrix();
+
 
     mat4.translate(mvMatrix, mvMatrix, [3.0, 0.0, 0.0]); // We moved to (-1.5, 0, -7) earlier, so now we are at (1.5, 0, -7)
+
+    mvPushMatrix();
+    mat4.rotate(mvMatrix, mvMatrix, squareRot, [1, 0, 0]);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexPosBuffer);
     gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, squareVertexPosBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -194,5 +220,27 @@ var drawScene = function(){
 
     setMatrixUniforms();
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, squareVertexPosBuffer.numItems);
+
+    mvPopMatrix();
+};
+
+var lastTime = 0;
+var animate = function(){
+	var now = Date.now();
+
+	if(lastTime != 0){
+		var elapsed = (now - lastTime) / 1000; // time elapsed in seconds
+
+		triangleRot += 0.5 * Math.PI * elapsed; // 90 deg/s
+		squareRot += (75/180) * Math.PI * elapsed; // 75 deg/s
+	}
+
+	lastTime = now;
+};
+
+var tick = function(){
+	window.requestAnimFrame(tick); // requestAnimFrame is a browser-independent function provided by google's webgl-utils
+	drawScene();
+	animate();
 };
 
