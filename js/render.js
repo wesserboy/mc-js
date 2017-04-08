@@ -6,6 +6,7 @@ var initWebGL = function(canvas){
 
 	if(!myGL){
 		console.log("Failed to load WEB_GL");
+        return null;
 	}
 
 	// set canvas to be fullscreen
@@ -331,6 +332,8 @@ var directionalR = 1.0;
 var directionalG = 1.0;
 var directionalB = 1.0;
 
+var blendingEnabled = false;
+
 var drawScene = function(){
 	// pass gl the size of the canvas we're going to draw onto.
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
@@ -358,6 +361,15 @@ var drawScene = function(){
 
     gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
     gl.vertexAttribPointer(shaderProgram.vertexTextureCoordAttribute, cubeVertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    if(blendingEnabled){
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+        gl.enable(gl.BLEND);
+        gl.disable(gl.DEPTH_TEST);
+    }else{
+        gl.disable(gl.BLEND);
+        gl.enable(gl.DEPTH_TEST);
+    }
 
     gl.uniform1i(shaderProgram.useLightingUniform, lightingEnabled);
     if(lightingEnabled){
