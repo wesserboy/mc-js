@@ -83,9 +83,18 @@ var initShaders = function(){
     shaderProgram.vertexTextureCoordAttribute = gl.getAttribLocation(shaderProgram, "aTextureCoord");
     gl.enableVertexAttribArray(shaderProgram.vertexTextureCoordAttribute);
 
+    shaderProgram.vertexNormalAttribute = gl.getAttribLocation(shaderProgram, "aVertexNormal");
+    gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
+
     shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
     shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
     shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
+
+    shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
+    shaderProgram.ambientColorUniform = gl.getUniformLocation(shaderProgram, "uAmbientColor");
+    shaderProgram.lightingDirectionUniform = gl.getUniformLocation(shaderProgram, "uLightingDirection");
+    shaderProgram.directionalColorUniform = gl.getUniformLocation(shaderProgram, "uDirectionalColor");
+    shaderProgram.useLightingUniform = gl.getUniformLocation(shaderProgram, "uUseLighting");
 };
 
 
@@ -134,10 +143,15 @@ var mvPopMatrix = function(){
 var setMatrixUniforms = function(){
 	gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
     gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
+
+    var normalMatrix = mat3.create();
+    mat3.normalFromMat4(normalMatrix, mvMatrix);
+    gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, normalMatrix);
 };
 
 
 var cubeVertexPosBuffer;
+var cubeVertexNormalBuffer;
 var cubeVertexTextureCoordBuffer;
 var cubeVertexIndexBuffer;
 
@@ -186,6 +200,54 @@ var initBuffers = function(){
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
     cubeVertexPosBuffer.numItems = 24;
     cubeVertexPosBuffer.itemSize = 3;
+
+
+    cubeVertexNormalBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexNormalBuffer);
+
+    // The normal for a particular vertex is equal to the normal of the face it belongs to.
+    var vertexNormals = [
+        // front
+        0.0, 0.0, 1.0,
+        0.0, 0.0, 1.0,
+        0.0, 0.0, 1.0,
+        0.0, 0.0, 1.0,
+
+        // back
+        0.0, 0.0, -1.0,
+        0.0, 0.0, -1.0,
+        0.0, 0.0, -1.0,
+        0.0, 0.0, -1.0,
+
+        // top
+        0.0, 1.0, 0.0,
+        0.0, 1.0, 0.0,
+        0.0, 1.0, 0.0,
+        0.0, 1.0, 0.0,
+
+        // bottom
+        0.0, -1.0, 0.0,
+        0.0, -1.0, 0.0,
+        0.0, -1.0, 0.0,
+        0.0, -1.0, 0.0,
+
+        // right
+        1.0, 0.0, 0.0,
+        1.0, 0.0, 0.0,
+        1.0, 0.0, 0.0,
+        1.0, 0.0, 0.0,
+
+        // left
+        -1.0, 0.0, 0.0,
+        -1.0, 0.0, 0.0,
+        -1.0, 0.0, 0.0,
+        -1.0, 0.0, 0.0
+    ];
+
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
+    cubeVertexNormalBuffer.numItems = 24;
+    cubeVertexNormalBuffer.itemSize = 3;
+
 
     cubeVertexTextureCoordBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
@@ -257,6 +319,18 @@ var ySpeed = 0;
 
 var zCoord = -5;
 
+var lightingEnabled = false;
+
+var ambientR = 1.0;
+var ambientG = 1.0;
+var ambientB = 1.0;
+
+var lightDirection = [0.0, 0.0, -1.0];
+
+var directionalR = 1.0;
+var directionalG = 1.0;
+var directionalB = 1.0;
+
 var drawScene = function(){
 	// pass gl the size of the canvas we're going to draw onto.
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
@@ -279,8 +353,23 @@ var drawScene = function(){
     gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPosBuffer);
     gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, cubeVertexPosBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
+    gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexNormalBuffer);
+    gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, cubeVertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
     gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
     gl.vertexAttribPointer(shaderProgram.vertexTextureCoordAttribute, cubeVertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    gl.uniform1i(shaderProgram.useLightingUniform, lightingEnabled);
+    if(lightingEnabled){
+        gl.uniform3f(shaderProgram.ambientColorUniform, ambientR, ambientG, ambientB);
+
+        var adjustedLD = vec3.create();
+        vec3.normalize(adjustedLD, lightDirection);
+        vec3.scale(adjustedLD, adjustedLD, -1);
+        gl.uniform3fv(shaderProgram.lightingDirectionUniform, adjustedLD);
+
+        gl.uniform3f(shaderProgram.directionalColorUniform, directionalR, directionalG, directionalB);
+    }
 
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, dirtTexture);

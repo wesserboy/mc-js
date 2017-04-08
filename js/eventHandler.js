@@ -33,6 +33,10 @@ var onResize = function(){
 var pressedKeys = {};
 var onKeyDown = function(event){
 	pressedKeys[event.keyCode] = true;
+
+	if(event.keyCode == 76){
+		lightingEnabled = !lightingEnabled;
+	}
 };
 
 var onKeyUp = function(event){
