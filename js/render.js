@@ -246,13 +246,53 @@ var initBuffers = function(){
     cubeVertexIndexBuffer.numItems = 36;
 };
 
-var xRot = 0;
-var xSpeed = 0;
 
-var yRot = 0;
-var ySpeed = 0;
+var camera;
+var world = [];
+var initWorld = function(){
+    for(var x = -5; x < 5; x++){
+        for(var z = -5; z < 5; z++){
+            world.push(getEntryForCoords(x, z));
+        }
+    }
 
-var zCoord = -5;
+    camera = new Camera(0.5, 1.8, 0.5);
+};
+
+var getEntryForCoords = function(x, z){ // No y yet for testing purposes.
+    // convert x and z to 16-bit signed integers.
+    var sign = 0b10000000000000000000000000000000; // filters the sign off of a 32-bit signed integer.
+    var mask = 0b00000000000000000111111111111111; // filters the right-most 15 bits of a 32-bit signed integer.
+
+    var xSign = x & sign;
+    xSign >>>= 16;
+    x = Math.abs(x);
+    x &= mask;
+    x |= xSign;
+
+    var zSign = z & sign;
+    zSign >>>= 16;
+    z = Math.abs(z);
+    z &= mask;
+    z |= zSign;
+
+    return result = (x << 16) | z;
+};
+
+var getCoordsFromEntry = function(entry){
+    var result = [0, 0, 0];
+
+    var x = (entry << 1) >>> 17; // get x's value without the sign
+    x = ((entry >>> 31) & 1) ? -x : x;
+    result[0] = x;
+
+    var z = (entry << 17) >>> 17; // get z's value without the sign
+    z = ((entry >>> 15) & 1) ? -z : z;
+    result[2] = z;
+
+    return result;
+};
+
 
 var drawScene = function(){
 	// pass gl the size of the canvas we're going to draw onto.
@@ -261,21 +301,23 @@ var drawScene = function(){
 	// clear the color buffer and the depth buffer. A bitwise or is used to combine these into 1 argument.
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-	// setup the perspective. By default this is orthographic, this call sets it up with a frustrum with: fov = 45deg, aspect-ratio = height/width, zNear = 0.1 and zFar = 100.
-	mat4.perspective(pMatrix, 45/180*Math.PI, gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100.0);
+	// setup the perspective. By default this is orthographic, this call sets it up with a frustrum with: fov = 60deg, aspect-ratio = height/width, zNear = 0.1 and zFar = 100.
+	mat4.perspective(pMatrix, 60/180*Math.PI, gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100.0);
 
 	// This function call sets the model view matrix to the identity matrix. (It basically sets up a matrix at the origin from where we can start applying transformations)
 	mat4.identity(mvMatrix);
 
-    mat4.translate(mvMatrix, mvMatrix, [0, 0, zCoord]);
+    mat4.translate(mvMatrix, mvMatrix, [-0.5, -0.5, -0.5]); // make block positions define the bottom left corners.
 
-    mvPushMatrix();
-    mat4.rotate(mvMatrix, mvMatrix, xRot, [1, 0, 0]);
-    mat4.rotate(mvMatrix, mvMatrix, yRot, [0, 1, 0]);
+    camera.applyTransformations(mvMatrix);
 
-    drawBlock();
+    for(entry in world){
+        mvPushMatrix();
+        mat4.translate(mvMatrix, mvMatrix, getCoordsFromEntry(world[entry]));
 
-    mvPopMatrix();
+        drawBlock();
+        mvPopMatrix();
+    }
 };
 
 var drawBlock = function(){
@@ -295,47 +337,23 @@ var drawBlock = function(){
 };
 
 var handleKeys = function(){
-    if(pressedKeys[187]){ // +_key
-        zCoord += 0.05;
+    if(pressedKeys[38]){ // up arrow
+        camera.move(0, 0, -0.03);
     }
-    if(pressedKeys[189]){ //-_key
-        zCoord -= 0.05;
+    if(pressedKeys[40]){ // down arrow
+        camera.move(0, 0, 0.03);
     }
-
-    if(pressedKeys[38]){ //arrow up
-        xSpeed -= 1/180*Math.PI;
+    if(pressedKeys[37]){ // left arrow
+        camera.move(-0.03, 0, 0);
     }
-    if(pressedKeys[40]){ //arrow down
-        xSpeed += 1/180*Math.PI;
+    if(pressedKeys[39]){ // right arrow
+        camera.move(0.03, 0, 0);
     }
-
-    if(pressedKeys[37]){ // arrow left
-        ySpeed -= 1/180*Math.PI;
-    }
-
-    if(pressedKeys[39]){ // arrow right
-        ySpeed += 1/180*Math.PI;
-    }
-};
-
-var lastTime = 0;
-var animate = function(){
-	var now = Date.now();
-
-	if(lastTime != 0){
-		var elapsed = (now - lastTime) / 1000; // time elapsed in seconds
-
-		xRot += xSpeed * Math.PI * elapsed;
-        yRot += ySpeed * Math.PI * elapsed;
-	}
-
-	lastTime = now;
 };
 
 var tick = function(){
 	window.requestAnimFrame(tick); // requestAnimFrame is a browser-independent function provided by google's webgl-utils
     handleKeys();
 	drawScene();
-	animate();
 };
 
