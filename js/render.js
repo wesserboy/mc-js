@@ -250,13 +250,17 @@ var initBuffers = function(){
 var camera;
 var world = [];
 var initWorld = function(){
+    /**
     for(var x = -5; x < 5; x++){
         for(var z = -5; z < 5; z++){
             world.push(getEntryForCoords(x, z));
         }
     }
+    **/
 
-    camera = new Camera(0.5, 1.8, 0.5);
+    world.push(getEntryForCoords(0, -2));
+
+    camera = new Camera(0.5, 2.8, 0.5);
 };
 
 var getEntryForCoords = function(x, z){ // No y yet for testing purposes.
@@ -307,8 +311,6 @@ var drawScene = function(){
 	// This function call sets the model view matrix to the identity matrix. (It basically sets up a matrix at the origin from where we can start applying transformations)
 	mat4.identity(mvMatrix);
 
-    mat4.translate(mvMatrix, mvMatrix, [-0.5, -0.5, -0.5]); // make block positions define the bottom left corners.
-
     camera.applyTransformations(mvMatrix);
 
     for(entry in world){
@@ -338,16 +340,16 @@ var drawBlock = function(){
 
 var handleKeys = function(){
     if(pressedKeys[38]){ // up arrow
-        camera.move(0, 0, -0.03);
+        camera.move(0, 0, -0.05);
     }
     if(pressedKeys[40]){ // down arrow
-        camera.move(0, 0, 0.03);
+        camera.move(0, 0, 0.05);
     }
     if(pressedKeys[37]){ // left arrow
-        camera.move(-0.03, 0, 0);
+        camera.move(-0.05, 0, 0);
     }
     if(pressedKeys[39]){ // right arrow
-        camera.move(0.03, 0, 0);
+        camera.move(0.05, 0, 0);
     }
 };
 
