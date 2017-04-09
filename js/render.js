@@ -12,9 +12,6 @@ var initWebGL = function(canvas){
 	canvas.width = window.innerWidth;
 	canvas.height = window.innerHeight;
 
-	myGL.viewportWidth = canvas.width;
-    myGL.viewportHeight = canvas.height;
-
 	return myGL;
 }
 
@@ -51,7 +48,7 @@ var getShader = function(gl, id){
 
     // if the compilation fails, log the error
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        alert(gl.getShaderInfoLog(shader));
+        console.error(gl.getShaderInfoLog(shader));
         return null;
     }
 
@@ -104,7 +101,7 @@ var handleLoadedTexture = function(texture){
     gl.bindTexture(gl.TEXTURE_2D, texture);
 
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, texture.image);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST); // These two lines tell gl how to scale when the drawing is larger/smaller than the src image.
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
@@ -147,40 +144,40 @@ var initBuffers = function(){
 
     vertices = [
         // front
-    	-1.0, -1.0, 1.0,
+    	-1.0, 1.0, 1.0,
+        -1.0, -1.0, 1.0,
         1.0, -1.0, 1.0,
         1.0, 1.0, 1.0,
-        -1.0, 1.0, 1.0,
 
         // back
         1.0, 1.0, -1.0,
-        -1.0, 1.0, -1.0,
-        -1.0, -1.0, -1.0,
         1.0, -1.0, -1.0,
+        -1.0, -1.0, -1.0,
+        -1.0, 1.0, -1.0,
 
         // top
         -1.0, 1.0, -1.0,
-        1.0, 1.0, -1.0,
-        1.0, 1.0, 1.0,
         -1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0,
+        1.0, 1.0, -1.0,
 
         // bottom
+        -1.0, -1.0, 1.0,
         -1.0, -1.0, -1.0,
         1.0, -1.0, -1.0,
         1.0, -1.0, 1.0,
-        -1.0, -1.0, 1.0,
 
         // right
-        1.0, 1.0, -1.0,
-        1.0, -1.0, -1.0,
-        1.0, -1.0, 1.0,
         1.0, 1.0, 1.0,
+        1.0, -1.0, 1.0,
+        1.0, -1.0, -1.0,
+        1.0, 1.0, -1.0,
 
         // left
         -1.0, 1.0, -1.0,
-        -1.0, 1.0, 1.0, 
+        -1.0, -1.0, -1.0, 
         -1.0, -1.0, 1.0,
-        -1.0, -1.0, -1.0
+        -1.0, 1.0, 1.0
     ];
 
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
@@ -192,40 +189,40 @@ var initBuffers = function(){
 
     var textureCoords = [
       // Front face
+      0.0, 1.0,
       0.0, 0.0,
       1.0, 0.0,
       1.0, 1.0,
-      0.0, 1.0,
 
       // Back face
       0.0, 1.0,
-      1.0, 1.0,
-      1.0, 0.0,
       0.0, 0.0,
+      1.0, 0.0,
+      1.0, 1.0,
 
       // Top face
       0.0, 1.0,
-      1.0, 1.0,
-      1.0, 0.0,
       0.0, 0.0,
+      1.0, 0.0,
+      1.0, 1.0,
 
       // Bottom face
+      0.0, 1.0,
       0.0, 0.0,
       1.0, 0.0,
       1.0, 1.0,
-      0.0, 1.0,
 
       // Right face
-      1.0, 1.0,
-      1.0, 0.0,
-      0.0, 0.0,
       0.0, 1.0,
+      0.0, 0.0,
+      1.0, 0.0,
+      1.0, 1.0,
 
       // Left face
       0.0, 1.0,
-      1.0, 1.0,
-      1.0, 0.0,
       0.0, 0.0,
+      1.0, 0.0,
+      1.0, 1.0
     ];
 
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
@@ -259,13 +256,13 @@ var zCoord = -5;
 
 var drawScene = function(){
 	// pass gl the size of the canvas we're going to draw onto.
-	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+	gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
 
 	// clear the color buffer and the depth buffer. A bitwise or is used to combine these into 1 argument.
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 	// setup the perspective. By default this is orthographic, this call sets it up with a frustrum with: fov = 45deg, aspect-ratio = height/width, zNear = 0.1 and zFar = 100.
-	mat4.perspective(pMatrix, 45/180*Math.PI, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0);
+	mat4.perspective(pMatrix, 45/180*Math.PI, gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100.0);
 
 	// This function call sets the model view matrix to the identity matrix. (It basically sets up a matrix at the origin from where we can start applying transformations)
 	mat4.identity(mvMatrix);
@@ -276,6 +273,12 @@ var drawScene = function(){
     mat4.rotate(mvMatrix, mvMatrix, xRot, [1, 0, 0]);
     mat4.rotate(mvMatrix, mvMatrix, yRot, [0, 1, 0]);
 
+    drawBlock();
+
+    mvPopMatrix();
+};
+
+var drawBlock = function(){
     gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPosBuffer);
     gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, cubeVertexPosBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
@@ -289,8 +292,6 @@ var drawScene = function(){
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
     setMatrixUniforms();
     gl.drawElements(gl.TRIANGLES, cubeVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
-
-    mvPopMatrix();
 };
 
 var handleKeys = function(){

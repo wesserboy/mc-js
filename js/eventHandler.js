@@ -1,14 +1,14 @@
 var onLoad = function(){
 	gl = initWebGL(document.getElementById("gl-canvas"));
 
+	if(!gl){
+		return;
+	}
+
 	window.addEventListener("resize", onResize);
 
 	document.addEventListener("keydown", onKeyDown);
 	document.addEventListener("keyup", onKeyUp);
-
-	if(!gl){
-		return;
-	}
 
 	initShaders();
     initBuffers();
@@ -16,6 +16,7 @@ var onLoad = function(){
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.enable(gl.DEPTH_TEST);
+    gl.enable(gl.CULL_FACE);
 
     tick();
 };
@@ -25,9 +26,6 @@ var onResize = function(){
 
 	canvas.width = window.innerWidth;
 	canvas.height = window.innerHeight;
-
-	gl.viewportWidth = canvas.width;
-    gl.viewportHeight = canvas.height;
 };
 
 var pressedKeys = {};
