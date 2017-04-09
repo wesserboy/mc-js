@@ -45,5 +45,3 @@ var onKeyDown = function(event){
 var onKeyUp = function(event){
 	pressedKeys[event.keyCode] = false;
 };
-
-// test 2
