@@ -36,7 +36,8 @@ Camera.prototype.rotateDown = function(rads){
 }
 
 Camera.prototype.applyTransformations = function(matrix){
-	mat4.translate(matrix, matrix, [-this.x, -this.y, -this.z]);
 	mat4.rotateX(matrix, matrix, this.pitch);
 	mat4.rotateY(matrix, matrix, this.yaw);
+
+	mat4.translate(matrix, matrix, [-this.x, -this.y, -this.z]);
 }

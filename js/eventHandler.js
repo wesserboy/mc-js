@@ -65,9 +65,6 @@ var onMouseMove = function(event){
 		var movY = event.movementY;
 
 		camera.rotateRight(movX * 0.01);
-		camera.rotateDown(movY * -0.01);
-
-		console.log("pitch: " + camera.pitch);
-		console.log("yaw: " + camera.yaw);
+		camera.rotateDown(movY * 0.01);
 	}
 };
