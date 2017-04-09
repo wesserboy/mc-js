@@ -31,6 +31,13 @@ var onResize = function(){
 var pressedKeys = {};
 var onKeyDown = function(event){
 	pressedKeys[event.keyCode] = true;
+
+	if(event.keyCode == 76){ // L
+		lightingEnabled = !lightingEnabled;
+	}
+	if(event.keyCode == 66){ // B
+		blendingEnabled = !blendingEnabled;
+	}
 };
 
 var onKeyUp = function(event){
