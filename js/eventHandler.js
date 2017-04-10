@@ -1,3 +1,6 @@
+var gl;
+var globalWorld;
+
 var onLoad = function(){
 	gl = initWebGL(document.getElementById("gl-canvas"));
 
@@ -13,17 +16,33 @@ var onLoad = function(){
 	gl.canvas.addEventListener("click", onClick);
 	document.addEventListener("pointerlockchange", onPointerLockChange);
 
+
 	initShaders();
     initBuffers();
     initTexture();
-    initWorld();
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);
 
-    tick();
+    globalWorld = new World();
+    globalWorld.tick();
 };
+
+var initWebGL = function(canvas){
+	var myGL = null;
+	myGL = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+
+	if(!myGL){
+		console.log("Failed to load WEB_GL");
+	}
+
+	// set canvas to be fullscreen
+	canvas.width = window.innerWidth;
+	canvas.height = window.innerHeight;
+
+	return myGL;
+}
 
 var onResize = function(){
 	var canvas = document.getElementById("gl-canvas");
@@ -64,7 +83,6 @@ var onMouseMove = function(event){
 		var movX = event.movementX;
 		var movY = event.movementY;
 
-		camera.rotateRight(movX * 0.01);
-		camera.rotateDown(movY * 0.01);
+		globalWorld.player.setHeadRotation(globalWorld.player.yawHead + movX * 0.01, globalWorld.player.pitchHead + movY * 0.01);
 	}
 };

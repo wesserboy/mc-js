@@ -1,21 +1,3 @@
-var gl;
-
-var initWebGL = function(canvas){
-	var myGL = null;
-	myGL = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-
-	if(!myGL){
-		console.log("Failed to load WEB_GL");
-	}
-
-	// set canvas to be fullscreen
-	canvas.width = window.innerWidth;
-	canvas.height = window.innerHeight;
-
-	return myGL;
-}
-
-
 var getShader = function(gl, id){
 	var shaderScript = document.getElementById(id); // Get the shader script form the document
     if (!shaderScript) {
@@ -58,7 +40,6 @@ var getShader = function(gl, id){
 
 
 var shaderProgram;
-
 var initShaders = function(){
 	var fragmentShader = getShader(gl, "shader-fs");
     var vertexShader = getShader(gl, "shader-vs");
@@ -100,7 +81,6 @@ var initTexture = function(){
 var handleLoadedTexture = function(texture){
     gl.bindTexture(gl.TEXTURE_2D, texture);
 
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST); // These two lines tell gl how to scale when the drawing is larger/smaller than the src image.
@@ -189,40 +169,40 @@ var initBuffers = function(){
 
     var textureCoords = [
       // Front face
-      0.0, 1.0,
       0.0, 0.0,
-      1.0, 0.0,
+      0.0, 1.0,
       1.0, 1.0,
+      1.0, 0.0,
 
       // Back face
-      0.0, 1.0,
       0.0, 0.0,
-      1.0, 0.0,
+      0.0, 1.0,
       1.0, 1.0,
+      1.0, 0.0,
 
       // Top face
-      0.0, 1.0,
       0.0, 0.0,
-      1.0, 0.0,
+      0.0, 1.0,
       1.0, 1.0,
+      1.0, 0.0,
 
       // Bottom face
-      0.0, 1.0,
       0.0, 0.0,
-      1.0, 0.0,
+      0.0, 1.0,
       1.0, 1.0,
+      1.0, 0.0,
 
       // Right face
-      0.0, 1.0,
       0.0, 0.0,
-      1.0, 0.0,
+      0.0, 1.0,
       1.0, 1.0,
+      1.0, 0.0,
 
       // Left face
-      0.0, 1.0,
       0.0, 0.0,
-      1.0, 0.0,
-      1.0, 1.0
+      0.0, 1.0,
+      1.0, 1.0,
+      1.0, 0.0
     ];
 
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
@@ -246,60 +226,6 @@ var initBuffers = function(){
     cubeVertexIndexBuffer.numItems = 36;
 };
 
-
-var camera;
-var world = [];
-var initWorld = function(){
-    /**
-    for(var x = -5; x < 5; x++){
-        for(var z = -5; z < 5; z++){
-            world.push(getEntryForCoords(x, z));
-        }
-    }
-    **/
-
-    world.push(getEntryForCoords(0, 0));
-    world.push(getEntryForCoords(0, -2));
-    world.push(getEntryForCoords(0, -4));
-
-    camera = new Camera(0.5, 2.8, 0.5);
-};
-
-var getEntryForCoords = function(x, z){ // No y yet for testing purposes.
-    // convert x and z to 16-bit signed integers.
-    var sign = 0b10000000000000000000000000000000; // filters the sign off of a 32-bit signed integer.
-    var mask = 0b00000000000000000111111111111111; // filters the right-most 15 bits of a 32-bit signed integer.
-
-    var xSign = x & sign;
-    xSign >>>= 16;
-    x = Math.abs(x);
-    x &= mask;
-    x |= xSign;
-
-    var zSign = z & sign;
-    zSign >>>= 16;
-    z = Math.abs(z);
-    z &= mask;
-    z |= zSign;
-
-    return result = (x << 16) | z;
-};
-
-var getCoordsFromEntry = function(entry){
-    var result = [0, 0, 0];
-
-    var x = (entry << 1) >>> 17; // get x's value without the sign
-    x = ((entry >>> 31) & 1) ? -x : x;
-    result[0] = x;
-
-    var z = (entry << 17) >>> 17; // get z's value without the sign
-    z = ((entry >>> 15) & 1) ? -z : z;
-    result[2] = z;
-
-    return result;
-};
-
-
 var drawScene = function(){
 	// pass gl the size of the canvas we're going to draw onto.
 	gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
@@ -313,11 +239,11 @@ var drawScene = function(){
 	// This function call sets the model view matrix to the identity matrix. (It basically sets up a matrix at the origin from where we can start applying transformations)
 	mat4.identity(mvMatrix);
 
-    camera.applyTransformations(mvMatrix);
+    globalWorld.player.camera.applyTransformations(mvMatrix);
 
-    for(entry in world){
+    for(entry in globalWorld.blocks){
         mvPushMatrix();
-        mat4.translate(mvMatrix, mvMatrix, getCoordsFromEntry(world[entry]));
+        mat4.translate(mvMatrix, mvMatrix, globalWorld.getCoordsFromEntry(globalWorld.blocks[entry]));
 
         drawBlock();
         mvPopMatrix();
@@ -339,31 +265,3 @@ var drawBlock = function(){
     setMatrixUniforms();
     gl.drawElements(gl.TRIANGLES, cubeVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 };
-
-var handleKeys = function(){
-    if(pressedKeys[38]){ // up arrow
-        camera.move(0, 0, -0.05);
-    }
-    if(pressedKeys[40]){ // down arrow
-        camera.move(0, 0, 0.05);
-    }
-    if(pressedKeys[37]){ // left arrow
-        camera.move(-0.05, 0, 0);
-    }
-    if(pressedKeys[39]){ // right arrow
-        camera.move(0.05, 0, 0);
-    }
-    if(pressedKeys[32]){ // spacebar
-        camera.move(0, 0.05, 0);
-    }
-    if(pressedKeys[16]){ // shift
-        camera.move(0, -0.05, 0);
-    }
-};
-
-var tick = function(){
-	window.requestAnimFrame(tick); // requestAnimFrame is a browser-independent function provided by google's webgl-utils
-    handleKeys();
-	drawScene();
-};
-
